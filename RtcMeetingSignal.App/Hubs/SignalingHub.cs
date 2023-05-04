@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using RtcMeetingSignal.App.Models;
 
 namespace RtcMeetingSignal.App.Hubs;
 
@@ -8,19 +9,21 @@ public class SignalingHub : Hub
     private const string ReceiveOffer = nameof(ReceiveOffer);
     private const string ReceiveAnswer = nameof(ReceiveAnswer);
     
-    private static List<string> _connections = new();
-        
+    private static readonly List<string> Connections = new();
+    // This will later be refactored
+    private static readonly Dictionary <string, List<string>> Rooms = new();
+
     public override Task OnConnectedAsync()
     {
         var connectionId = Context.ConnectionId;
-        _connections.Add(connectionId);
+        Connections.Add(connectionId);
         
         return base.OnConnectedAsync();
     }
 
     public async Task SendMessageAsync(string message)
     {
-        foreach (var connection in _connections)
+        foreach (var connection in Connections)
         {
             if (Context.ConnectionId != connection)
             {
@@ -30,9 +33,9 @@ public class SignalingHub : Hub
     }
 
     // TODO Decide on offer structure
-    public async Task SendOfferAsync(object offer, string connectionId)
+    public async Task SendOfferAsync(SessionOffer offer)
     {
-        await Clients.Client(connectionId).SendAsync(ReceiveOffer, offer);
+        await Clients.All.SendAsync(ReceiveOffer, offer);
     }
 
     public async Task SendAnswerAsync(object answer, string connectionId)
